@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+.img_container {
+  height: 200px;
+  width: 200px;
+  overflow: hidden;
+  display: inline-block;
+  border: 2px solid gray;
+  margin: 10px;
+}
+img {
+  position: relative;
+  height: 200px;
+  clip: rect(0px,200px,200px,0px);
+}
+</style>
+</head>
+<body>
+  <div id="kittens"></div>
+  <div id="puppies"></div>
+
+<script src="jquery-2.2.0.min.js"></script>
+<script>
+$(document).ready(function() {
+  for (var i=0; i<10; i++) {
+    $("#kittens").append(
+      "<div class='img_container'>" +
+      "<img src='images/kitten" + i + ".jpg'/>" +
+      "</div>"
+    );
+    $("#puppies").append(
+      "<div class='img_container'>" +
+      "<img src='images/puppy" + i + ".jpg'/>" +
+      "</div>"
+    );
+  }
+})
+</script>
+</body>
+</html>

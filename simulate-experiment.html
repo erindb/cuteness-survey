@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="jquery-1.11.2.min.js"></script>
+<style>
+.avatar {
+	margin: 0;
+	padding: 0;
+}
+iframe {
+	margin: 10;
+	width: 850px;
+	height: 650px;
+}
+#mouseAvatar {
+ position: absolute;
+}
+#clickAvatar {
+ position: absolute;
+ display: none;
+}
+</style>
+</head>
+<body>
+	<script src="simulate-experiment.js"></script>
+	<img class="avatar" id="mouseAvatar" src="images/mouse-avatar.gif"/>
+	<img class="avatar" id="clickAvatar" src="images/click-avatar.gif"/>
+	<iframe id="experiment" src="cuteness-survey.html"/>
+</body>
+</html>

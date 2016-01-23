@@ -8,16 +8,16 @@ body {
 	font-family: Palatino Linotype, Bookman Antiqua, Palatino, serif;
 	font-size: 16px;
 	line-height: 20px;
+	text-align: center;
 }
 
 /* We manage display using "slides". A slide is a <code>div</code> that takes up the entire page. Only one slide should be visible at a time. Navigation between slides is most sensibly accomplished using using buttons, rather than keyboard events. */
 .slide {
-	width: 95%;
-	height: 95%;
+	width: 800px;
+	height: 600px;
 	display: none;
-	position: absolute;
-	margin: 0;
-	margin-left: 0.5%;
+	position: relative;
+	margin: 0 auto;
 	padding: 1% 2% 1% 2%;
 }
 
@@ -92,4 +92,18 @@ button[disabled] {
   text-align: center;
   width: 100px;
   margin-top: 100px;
+}
+
+.animalContainer {
+  height: 200px;
+  width: 200px;
+  overflow: hidden;
+  display: inline-block;
+  border: 2px solid gray;
+  margin: 10px;
+}
+.animal {
+  position: relative;
+  height: 200px;
+  clip: rect(0px,200px,200px,0px);
 }

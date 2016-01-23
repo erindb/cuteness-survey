@@ -12,6 +12,12 @@
 
 // ## Helper functions
 
+var startTime = (new Date()).getTime();
+function time() {
+  var now = (new Date()).getTime();
+  return now - startTime;
+}
+
 // Shows slides. We're using jQuery here - the **$** is the jQuery selector function, which takes as input either a DOM element or a CSS selector string.
 function showSlide(id) {
   // Hide all slides
@@ -30,22 +36,21 @@ function randomElement(array) {
   return array[randomInteger(array.length)];
 }
 
-// ## Configuration settings
-var allKeyBindings = [
-      {"p": "odd", "q": "even"},
-      {"p": "even", "q": "odd"} ],
-    allTrialOrders = [
-      [1,3,2,5,4,9,8,7,6],
-      [8,4,3,7,5,6,2,1,9] ],
-    myKeyBindings = randomElement(allKeyBindings),
-    myTrialOrder = randomElement(allTrialOrders),
-    pOdd = (myKeyBindings["p"] == "odd");
-    
-// Fill in the instructions template using jQuery's <code>html()</code> method. In particular,
-// let the subject know which keys correspond to even/odd. Here, I'm using the so-called **ternary operator**, which is a shorthand for <code>if (...) { ... } else { ... }</code>
-
-$("#odd-key").text(pOdd ? "P" : "Q");
-$("#even-key").text(pOdd ? "Q" : "P");
+var nAnimals = 3;
+var trialOrder = function() {
+  var permutation = _.shuffle(_.range(nAnimals));
+  var pairs = [];
+  for (var i=0; i<nAnimals; i++) {
+    pairs.push({
+      kittenImage: "kitten" + permutation[i] + ".jpg",
+      puppyImage: "puppy" + i + ".jpg"
+    });
+  }
+  return pairs;
+}();
+var possiblePositions = [
+      {left: "kitten", right: "puppy"},
+      {left: "puppy", right: "kitten"} ];
 
 // Show the instructions slide -- this is what we want subjects to see first.
 showSlide("instructions");
@@ -55,17 +60,22 @@ showSlide("instructions");
 
 var experiment = {
   // Parameters for this sequence.
-  trials: myTrialOrder,
-  // Experiment-specific parameters - which keys map to odd/even
-  keyBindings: myKeyBindings,
+  trials: trialOrder,
   // An array to store the data that we're collecting.
   data: [],
+  events: [],
   // The function that gets called when the sequence is finished.
   end: function() {
+    clearInterval(setIntervalId);
     // Show the finish slide.
     showSlide("finished");
     // Wait 1.5 seconds and then submit the whole experiment object to Mechanical Turk (mmturkey filters out the functions so we know we're just submitting properties [i.e. data])
-    setTimeout(function() { turk.submit(experiment) }, 1500);
+    setTimeout(function() { turk.submit({
+      trials: experiment.data,
+      events: events,
+      startTime: startTime
+    }) }, 1500);
+    console.log(JSON.stringify(events));
   },
   // The work horse of the sequence - what to do on every trial.
   next: function() {
@@ -76,49 +86,90 @@ var experiment = {
     }
     
     // Get the current trial - <code>shift()</code> removes the first element of the array and returns it.
-    var n = experiment.trials.shift();
-    
-    // Compute the correct answer.
-    var realParity = (n % 2 == 0) ? "even" : "odd";
+    var trialImages = experiment.trials.shift();
     
     showSlide("stage");
-    // Display the number stimulus.
-    $("#number").text(n);
-    
-    // Get the current time so we can compute reaction time later.
-    var startTime = (new Date()).getTime();
-    
-    // Set up a function to react to keyboard input. Functions that are used to react to user input are called *event handlers*. In addition to writing these event handlers, you have to *bind* them to particular events (i.e., tell the browser that you actually want the handler to run when the user performs an action). Note that the handler always takes an <code>event</code> argument, which is an object that provides data about the user input (e.g., where they clicked, which button they pressed).
-    var keyPressHandler = function(event) {
-      // A slight disadvantage of this code is that you have to test for numeric key values; instead of writing code that expresses "*do X if 'Q' was pressed*", you have to do the more complicated "*do X if the key with code 80 was pressed*". A library like [Keymaster](http://github.com/madrobby/keymaster) lets you write simpler code like <code>key('a', function(){ alert('you pressed a!') })</code>, but I've omitted it here. Here, we get the numeric key code from the event object
-      var keyCode = event.which;
-      
-      if (keyCode != 81 && keyCode != 80) {
-        // If a key that we don't care about is pressed, re-attach the handler (see the end of this script for more info)
-        $(document).one("keydown", keyPressHandler);
-        
-      } else {
-        // If a valid key is pressed (code 80 is p, 81 is q),
-        // record the reaction time (current time minus start time), which key was pressed, and what that means (even or odd).
-        var endTime = (new Date()).getTime(),
-            key = (keyCode == 80) ? "p" : "q",
-            userParity = experiment.keyBindings[key],
-            data = {
-              stimulus: n,
-              accuracy: realParity == userParity ? 1 : 0,
-              rt: endTime - startTime
-            };
-        
-        experiment.data.push(data);
-        // Temporarily clear the number.
-        $("#number").text("");
-        // Wait 500 milliseconds before starting the next trial.
-        setTimeout(experiment.next, 500);
-      }
-    };
-    
-    // Here, we actually bind the handler. We're using jQuery's <code>one()</code> function, which ensures that the handler can only run once. This is very important, because generally you only want the handler to run only once per trial. If you don't bind with <code>one()</code>, the handler might run multiple times per trial, which can be disastrous. For instance, if the user accidentally presses P twice, you'll be recording an extra copy of the data for this trial and (even worse) you will be calling <code>experiment.next</code> twice, which will cause trials to be skipped! That said, there are certainly cases where you do want to run an event handler multiple times per trial. In this case, you want to use the <code>bind()</code> and <code>unbind()</code> functions, but you have to be extra careful about properly unbinding.
-    $(document).one("keydown", keyPressHandler);
-    
+
+    var positions = _.sample(possiblePositions);
+    function position(dir) {
+      var animal = positions[dir];
+      var imageFile = trialImages[animal + "Image"];
+      var div = $("<div/>", {class: "animalContainer"});
+      var img = $("<img/>", {class: "animal", src: "images/" + imageFile} );
+      img.appendTo(div);
+      $("#stage").append(div);
+      div.hide();
+      div.click(function() {
+        var clickTime = time();
+        experiment.data.push({
+          animal: animal,
+          imageFile: imageFile,
+          position: dir,
+          trialStartTime: experiment.trialStartTime,
+          clickTime: clickTime,
+          rt: clickTime - experiment.trialStartTime
+        })
+        $(".animalContainer").remove();
+        experiment.next();
+      });
+    }
+    position("left");
+    position("right");
+    setTimeout(function() {
+      $(".animalContainer").show();
+      // Get the current time so we can compute reaction time later.
+      experiment.trialStartTime = time();
+    }, 500);
   }
 }
+
+///// record all the events
+var x = 0;
+var y = 0;
+var events = [];
+
+var slideLeftMargin = parseFloat($(".slide").css("margin-left")) +
+      parseFloat($(".slide").css("padding-left"))
+
+document.onmousemove = function(e) {
+  x = (e.pageX - slideLeftMargin) / $(".slide").width();
+  y = e.pageY / $(".slide").height();
+};
+$(document).click(function(e) {
+  events.push({
+        type: "click",
+        x: x,
+        y: y,
+        time: time()
+  });
+});
+$(document).keyup(function(e){
+  events.push({
+        type: "keyup",
+        keyCode: e.keyCode,
+        key: String.fromCharCode(e.keyCode),
+        time: time()
+  });
+});
+var setIntervalId;
+$(document).ready(function() {
+  $(".continue").click(function() {
+    $(this).unbind("click");
+    this.blur();
+    events.push({
+          type: "click",
+          x: x,
+          y: y,
+          time: time()
+    });
+    experiment.next();
+  });
+  setIntervalId = setInterval(function(e) {
+    events.push({
+          type: "position",
+          x: x,
+          y: y,
+          time: time()
+    });
+  }, 50);
+});
