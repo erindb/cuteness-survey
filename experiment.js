@@ -67,21 +67,23 @@ var experiment = {
   // The function that gets called when the sequence is finished.
   end: function() {
     clearInterval(setIntervalId);
+    var allData = {
+      trials: experiment.data,
+      events: events,
+      startTime: startTime,
+      seed: aRandomSeed
+    }
     // Show the finish slide.
     showSlide("finished");
     // Wait 1.5 seconds and then submit the whole experiment object to Mechanical Turk (mmturkey filters out the functions so we know we're just submitting properties [i.e. data])
-    setTimeout(function() { turk.submit({
-      trials: experiment.data,
-      events: events,
-      startTime: startTime
-    }) }, 1500);
-    console.log(JSON.stringify(events));
+    setTimeout(function() { turk.submit({allData}) }, 1500);
+    console.log(JSON.stringify(allData));
   },
   // The work horse of the sequence - what to do on every trial.
   next: function() {
     // If the number of remaining trials is 0, we're done, so call the end function.
     if (experiment.trials.length == 0) {
-      experiment.end();
+      setTimeout(experiment.end, 100);
       return;
     }
     
